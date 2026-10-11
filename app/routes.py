@@ -8,6 +8,7 @@ bp = Blueprint("main", __name__)
 MAX_TITLE_LENGTH = 200
 CREATABLE_FIELDS = ("title", "description")
 UPDATABLE_FIELDS = ("title", "description", "status")
+SQLITE_MAX_INTEGER = 9223372036854775807
 
 
 # ---------- Validation helpers (shared by several endpoints) ----------
@@ -45,6 +46,12 @@ def validate_status(value):
         return f"Invalid status '{value}'. Allowed values: {allowed}"
     return None
 
+def find_task(task_id):
+    """Return the task with this id, or None if it does not exist."""
+    # SQLite integers stop at this value; a larger id cannot exist.
+    if task_id > SQLITE_MAX_INTEGER:
+        return None
+    return db.session.get(Task, task_id)
 
 # ---------- Endpoints ----------
 
@@ -103,7 +110,7 @@ def list_tasks():
 @bp.get("/api/tasks/<int:task_id>")
 def get_task(task_id):
     """Return one task by its ID."""
-    task = db.session.get(Task, task_id)
+    task = find_task(task_id)
     if task is None:
         return jsonify({"error": f"Task with id {task_id} not found"}), 404
     return jsonify(task.to_dict()), 200
@@ -112,7 +119,7 @@ def get_task(task_id):
 @bp.patch("/api/tasks/<int:task_id>")
 def update_task(task_id):
     """Partially update a task. Only the fields sent are changed."""
-    task = db.session.get(Task, task_id)
+    task = find_task(task_id)
     if task is None:
         return jsonify({"error": f"Task with id {task_id} not found"}), 404
 
@@ -158,7 +165,7 @@ def update_task(task_id):
 @bp.delete("/api/tasks/<int:task_id>")
 def delete_task(task_id):
     """Delete a task by its ID."""
-    task = db.session.get(Task, task_id)
+    task = find_task(task_id)
     if task is None:
         return jsonify({"error": f"Task with id {task_id} not found"}), 404
 
