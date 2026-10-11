@@ -4,6 +4,8 @@ A small REST API for managing tasks, built with Python, Flask, Flask-SQLAlchemy 
 
 I built this as a learning and portfolio project to practise backend fundamentals: REST API design, a database layer with an ORM, input validation, consistent error handling and automated testing.
 
+[![Tests](https://github.com/zunairaiftikh/taskflow-rest-api/actions/workflows/tests.yml/badge.svg)](https://github.com/zunairaiftikh/taskflow-rest-api/actions/workflows/tests.yml)
+
 ## Objectives
 
 - Design a clean REST API with the correct HTTP methods and status codes.
@@ -18,7 +20,7 @@ I built this as a learning and portfolio project to practise backend fundamental
 - Request validation: missing or blank titles, invalid statuses, unsupported fields, malformed JSON.
 - Consistent JSON error responses for every error, including unknown URLs and unexpected server errors (no stack traces are returned to clients).
 - UTC timestamps for creation and last update.
-- 26 automated tests using pytest and Flask's test client.
+- - 32 automated tests using pytest and Flask's test client, run automatically on every push with GitHub Actions.
 
 ## Technology stack
 
@@ -40,9 +42,11 @@ TaskFlow/
 │   ├── extensions.py    # SQLAlchemy extension object
 │   ├── models.py        # Task model
 │   └── routes.py        # API endpoints and validation helpers
-├── tests/
-│   ├── conftest.py      # Test fixtures (app and client, in-memory database)
-│   └── test_tasks.py    # 26 tests
+├├── tests/
+│   ├── conftest.py          # Test fixtures (app and client, in-memory database)
+│   ├── test_tasks.py        # 26 tests: endpoints and error handling
+│   └── test_edge_cases.py   # 6 tests: edge cases and extra validation
+├── .github/workflows/tests.yml   # GitHub Actions: runs the tests on every push
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -191,7 +195,7 @@ Every error is a JSON object with an `error` message:
 | Status | When it happens |
 |---|---|
 | 400 Bad Request | Body is not a JSON object or is malformed; `title` missing, blank, not a string, or longer than 200 characters; `description` not a string or null; invalid status; unsupported field; empty PATCH body |
-| 404 Not Found | Task id does not exist, or the URL does not exist |
+| Task id does not exist (including ids too large to store), or the URL does not exist. |
 | 405 Method Not Allowed | The HTTP method is not supported for that URL |
 | 500 Internal Server Error | Unexpected failure. The client sees only a generic message; details are logged on the server |
 
@@ -212,7 +216,7 @@ Tests use Flask's test client and a fresh in-memory SQLite database for every te
 
 ### Test summary
 
-The suite contains 26 tests. All 26 passed in a local run on Windows with Python 3.14.7. It covers:
+The suite contains 32 tests. All 32 passed in a local run on Windows with Python 3.14.7, and the same suite runs on GitHub Actions (Ubuntu, Python 3.14) on every push to `main`. It covers:
 
 - Health check (1)
 - Creating tasks: success and validation failures (5)
@@ -220,7 +224,7 @@ The suite contains 26 tests. All 26 passed in a local run on Windows with Python
 - Retrieving a task, a missing task and a non-numeric id (3)
 - Updating tasks: success, clearing the description, invalid and unsupported input, malformed JSON, missing task, and a check that a failed update changes nothing (8)
 - Deleting tasks: success, only the requested task removed, missing task (3)
-- Error handling: wrong HTTP method (405) and an unexpected error producing a generic 500 (2)
+ - Edge cases in `test_edge_cases.py`: a task id too large for SQLite returns 404, overlong titles on create and update, a non-string description, a JSON list as the body, and a null status on update (6)
 
 A code coverage percentage has not been measured.
 
@@ -238,7 +242,6 @@ A code coverage percentage has not been measured.
 - Database migrations (for example with Flask-Migrate)
 - Authentication
 - Docker support
-- Continuous integration with GitHub Actions
 
 ## License
 
